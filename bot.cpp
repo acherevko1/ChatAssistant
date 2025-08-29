@@ -1,5 +1,6 @@
 #include "bot.h"
 #include <string>
+#include <cassert>
 
 Bot::Bot(const std::string& bot_token, const std::string& openai_token) 
     : telegram_client_(bot_token), openai_client_(openai_token), database_("chat_assistant.db") {
@@ -35,14 +36,23 @@ void Bot::ProcessMessages(const std::vector<Telegram::Message>& messages) {
 }
 
 bool Bot::BotMentioned(const std::string& text) {
-    return text.find("@krisa_assistant_bot") != std::string::npos;
+    return text.find("@krisa_assistant_bot") != std::string::npos || text.find("@ботьё") != std::string::npos;
 }
 
 std::string Bot::StripMention(const std::string message) {
-    std::string mention = "@krisa_assistant_bot";
-    auto mention_length = mention.size();
-    auto mention_pos = message.find(mention);
-    return message.substr(0, mention_pos) + message.substr(mention_pos + mention_length);
+    std::vector<std::string> mentions = {"@krisa_assistant_bot", "@ботьё"};
+
+    for (auto mention : mentions) {
+        auto mention_length = mention.size();
+        auto mention_pos = message.find(mention);
+        if (mention_pos == std::string::npos) {
+            continue;
+        }
+
+        return message.substr(0, mention_pos) + message.substr(mention_pos + mention_length);
+    }
+
+    assert(false);
 }
 
 std::vector<OpenAI::Message> Bot::CreateOpenAIMessages(const std::vector<Telegram::Message> messages) {
