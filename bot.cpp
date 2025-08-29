@@ -1,7 +1,8 @@
 #include "bot.h"
 #include <string>
 
-Bot::Bot(const std::string& bot_token, const std::string& openai_token) : telegram_client_(bot_token), openai_client_(openai_token) {
+Bot::Bot(const std::string& bot_token, const std::string& openai_token) 
+    : telegram_client_(bot_token), openai_client_(openai_token), database_("chat_assistant.db") {
 }
 
 void Bot::Run() {
@@ -17,10 +18,17 @@ void Bot::ProcessMessages(const std::vector<Telegram::Message>& messages) {
         if (BotMentioned(message.text)) {
             chat_histories_[message.chat_id].back().text = StripMention(chat_histories_[message.chat_id].back().text);
             auto openai_messages = CreateOpenAIMessages(chat_histories_[message.chat_id]);
-            auto reply = openai_client_.SendMessages(openai_messages, last_openai_message_id_[message.chat_id]);
+            
+            // Load previous message ID from database
+            std::string previous_id = database_.GetResponseMessageId(message.chat_id);
+            auto reply = openai_client_.SendMessages(openai_messages, previous_id);
 
             chat_histories_[message.chat_id].clear();
+            
+            // Save new response ID to database
+            database_.SaveResponseMessageId(message.chat_id, reply.response_message_id);
             last_openai_message_id_[message.chat_id] = reply.response_message_id;
+            
             telegram_client_.SendMessage(message.chat_id, reply.text);
         }
     }

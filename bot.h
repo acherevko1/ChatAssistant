@@ -1,5 +1,6 @@
 #include "telegram.h"
 #include "openai.h"
+#include "database.h"
 
 #include <cstdint>
 #include <string>
@@ -21,6 +22,7 @@ private:
 private:
     Telegram::Client telegram_client_;
     OpenAI::Client openai_client_;
+    Database database_;
     std::unordered_map<int64_t, std::vector<Telegram::Message>> chat_histories_;
     std::unordered_map<int64_t, std::string> last_openai_message_id_;
 };
